@@ -5,10 +5,13 @@ import (
 	"fmt"
 )
 
-func LoadSwagger(filename string) (error) {
+func LoadSwagger(filename string) (err error) {
 	swDoc, err := loads.Spec(filename)
+	if err != nil {
+		return 
+	}
 	for k, _ := range swDoc.Spec().Paths.Paths {
 		fmt.Println("Path:", k)
 	}
-	return err
+	return
 }
