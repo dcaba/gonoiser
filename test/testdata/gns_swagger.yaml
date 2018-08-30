@@ -1,0 +1,1162 @@
+swagger: '2.0'
+info:
+  version: "1.0.0"
+  title: GSN Engine
+basePath: /v1
+schemes:
+  - http
+  - https
+produces:
+  - application/json
+paths:
+  /auth/login:
+    get:
+      operationId: gsn_engine.controllers.auth.login
+      tags:
+        - auth
+      summary: SP Initiated SSO endpoint
+      responses:
+        302:
+          description: Redirect to OKTA
+  /auth/sso:
+    post:
+      operationId: gsn_engine.controllers.auth.sso
+      tags:
+        - auth
+      summary: IdP initiated SSO endpoint
+      parameters:
+        - in: formData
+          name: SAMLResponse
+          required: true
+          type: string
+        - in: formData
+          name: RelayState
+          required: false
+          type: string
+      responses:
+        302:
+          description: Redirect to GSN's frontend URL
+  /auth/logout:
+    get:
+      operationId: gsn_engine.controllers.auth.logout
+      tags:
+        - auth
+      summary: Logout
+      responses:
+        302:
+          description: Redirect to GSN's frontend URL
+  /auth/token:
+    post:
+      operationId: gsn_engine.controllers.auth.token_login
+      tags:
+        - auth
+      summary: Token based auth for services
+      parameters:
+        - in: body
+          name: token
+          description: Token
+          required: true
+          schema:
+            $ref: "#/definitions/TokenId"
+      responses:
+        204:
+          description: Session created
+        403:
+          description: Token not found, access denied
+  /healthcheck:
+    get:
+      operationId: gsn_engine.controllers.healthcheck.get
+      tags:
+        - healthcheck
+      summary: Healthcheck endpoint
+      responses:
+        200:
+          description: Service is healthy
+  /users:
+    post:
+      operationId: gsn_engine.controllers.users.post
+      tags:
+        - users
+      consumes:
+        - application/json
+      summary: Creates a new user
+      parameters:
+        - in: body
+          name: body
+          description: Service to be created
+          schema:
+            $ref: "#/definitions/User"
+      responses:
+        201:
+          description: User created
+          schema:
+            type: object
+            properties:
+              user_id:
+                $ref: "#/definitions/UserId"
+        409:
+          description: Duplicate, user already exists
+        422:
+          description: Parameters failed validation
+    get:
+      operationId: gsn_engine.controllers.users.get
+      tags:
+        - users
+      parameters:
+        - in: query
+          name: user_ids
+          type: array
+          items:
+            type: string
+        - in: query
+          name: emails
+          type: array
+          items:
+            type: string
+      responses:
+        200:
+          description: Return user list
+          schema:
+            type: object
+            properties:
+              users:
+                type: array
+                items:
+                  $ref: "#/definitions/User"
+  /users/{user_id}:
+    get:
+      operationId: gsn_engine.controllers.users.id_get
+      tags:
+        - users
+      summary: Retrieve User by id
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          type: string
+      responses:
+
+        200:
+          description: Return user
+          schema:
+            type: object
+            properties:
+              user:
+                $ref: "#/definitions/User"
+        404:
+          description: User not found
+    put:
+      operationId: gsn_engine.controllers.users.id_put
+      tags:
+        - users
+      consumes:
+        - application/json
+      summary: Updates the specified user
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          type: string
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/User"
+      responses:
+        204:
+          description: User updated
+        404:
+          description: User not found
+        422:
+          description: Parameters failed validation
+    delete:
+      operationId: gsn_engine.controllers.users.id_delete
+      tags:
+        - users
+      summary: Deletes the specified user
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          type: string
+      responses:
+        204:
+          description: User deleted
+        404:
+          description: User not found
+  /users/current:
+    get:
+      operationId: gsn_engine.controllers.users.current_get
+      tags:
+        - users
+      summary: Get the current (logged) user
+      responses:
+        200:
+          description: Return current user
+          schema:
+            type: object
+            properties:
+              user:
+                $ref: "#/definitions/User"
+  /tokens:
+    post:
+      operationId: gsn_engine.controllers.tokens.post
+      tags:
+        - token
+      summary: Add a new token
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: token object to be added
+          schema:
+            $ref: "#/definitions/TokenPost"
+      responses:
+        201:
+          description: Token created
+          schema:
+            type: object
+            properties:
+              token_id:
+                $ref: "#/definitions/TokenId"
+        409:
+          description: Conflict, token already exists or limit per user exceeded
+        422:
+          description: Parameters failed validation
+    get:
+      operationId: gsn_engine.controllers.tokens.get
+      tags:
+        - token
+      summary: Get a list of tokens
+      responses:
+        200:
+          description: Return list of tokens
+          schema:
+            type: object
+            properties:
+              tokens:
+                type: array
+                items:
+                  $ref: "#/definitions/Token"
+  /tokens/{token_id}:
+    delete:
+      operationId: gsn_engine.controllers.tokens.id_delete
+      tags:
+        - token
+      summary: Delete the specified token
+      parameters:
+        - in: path
+          name: token_id
+          description: Token ID (UUIDv4)
+          required: true
+          type: string
+      responses:
+        204:
+          description: Token deleted
+        404:
+          description: Token not found
+    put:
+      operationId: gsn_engine.controllers.tokens.id_put
+      tags:
+        - token
+      summary: Updates the specified token
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: token_id
+          description: Token ID (UUIDv4) to be updated.
+          type: string
+          required: true
+        - in: body
+          name: body
+          description: Token object to be updated
+          required: true
+          schema:
+            $ref: "#/definitions/TokenPut"
+      responses:
+        204:
+          description: Token updated
+        404:
+          description: Token not found
+        422:
+          description: Parameters failed validation
+    get:
+      operationId: gsn_engine.controllers.tokens.id_get
+      tags:
+        - token
+      summary: Gets the specified token
+      parameters:
+        - in: path
+          name: token_id
+          description: Token ID (UUIDv4)
+          required: true
+          type: string
+      responses:
+        200:
+          description: Return token
+          schema:
+            $ref: "#/definitions/Token"
+        404:
+          description: Token not found
+  /tokens/auto:
+    get:
+      operationId: gsn_engine.controllers.tokens.autogenerate
+      tags:
+        - token
+      summary: Autogenerate a token
+      responses:
+        200:
+          description: Autogenerate a token
+          schema:
+            type: object
+            properties:
+              tokens:
+                type: array
+                items:
+                  $ref: "#/definitions/Token"
+  /services:
+    post:
+      operationId: gsn_engine.controllers.services.post
+      tags:
+        - services
+      consumes:
+        - application/json
+      summary: Creates a new service
+      parameters:
+        - in: body
+          name: body
+          description: Service to be created
+          schema:
+            $ref: "#/definitions/Service"
+      responses:
+        201:
+          description: Service created
+          schema:
+            type: object
+            properties:
+              service_id:
+                $ref: "#/definitions/ServiceId"
+        409:
+          description: Duplicate, service already exists
+        422:
+          description: Parameters failed validation
+    get:
+      operationId: gsn_engine.controllers.services.get
+      tags:
+        - services
+      parameters:
+        - in: query
+          name: service_ids
+          type: array
+          items:
+            type: string
+        - in: query
+          name: names
+          type: array
+          items:
+            type: string
+      responses:
+        200:
+          description: Return service list
+          schema:
+            type: object
+            properties:
+              services:
+                type: array
+                items:
+                  $ref: "#/definitions/Service"
+  /services/{service_id}:
+    get:
+      operationId: gsn_engine.controllers.services.id_get
+      tags:
+        - services
+      summary: Retrieve Service by id
+      parameters:
+        - in: path
+          name: service_id
+          required: true
+          type: string
+      responses:
+        200:
+          description: Return service
+          schema:
+            type: object
+            properties:
+              service:
+                $ref: "#/definitions/Service"
+        404:
+          description: Service not found
+    put:
+      operationId: gsn_engine.controllers.services.id_put
+      tags:
+        - services
+      consumes:
+        - application/json
+      summary: Updates the specified service
+      parameters:
+        - in: path
+          name: service_id
+          required: true
+          type: string
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/Service"
+      responses:
+        204:
+          description: Service updated
+        404:
+          description: Service not found
+        422:
+          description: Parameters failed validation
+    delete:
+      operationId: gsn_engine.controllers.services.id_delete
+      tags:
+        - services
+      summary: Deletes the specified service
+      parameters:
+        - in: path
+          name: service_id
+          required: true
+          type: string
+      responses:
+        204:
+          description: Service deleted
+        404:
+          description: Service not found
+  /services/metrics:
+    get:
+      operationId: gsn_engine.controllers.services.metrics_get
+      tags:
+        - services
+        - metrics
+      summary: Retrieve Service metrics
+      responses:
+        200:
+          description: Return service service
+          schema:
+            type: object
+            properties:
+              metrics:
+                $ref: "#/definitions/ServicesMetrics"
+        404:
+          description: Service not found
+
+  /resources:
+    post:
+      operationId: gsn_engine.controllers.resources.post
+      tags:
+        - resources
+      consumes:
+        - application/json
+      summary: Creates a new resource
+      parameters:
+        - in: body
+          name: body
+          description: Resource to be created
+          schema:
+            $ref: "#/definitions/Resource"
+      responses:
+        201:
+          description: Resource created
+          schema:
+            type: object
+            properties:
+              resource_id:
+                $ref: "#/definitions/ResourceId"
+        409:
+          description: Duplicate, resource already exists
+        422:
+          description: Parameters failed validation
+    get:
+      operationId: gsn_engine.controllers.resources.get
+      tags:
+        - resources
+      parameters:
+        - in: query
+          name: service_id
+          description: Id of the service
+          type: string
+          required: true
+      responses:
+        200:
+          description: Return resource list
+          schema:
+            type: object
+            properties:
+              resource:
+                type: array
+                items:
+                  $ref: "#/definitions/Resource"
+  /resources/{resource_id}:
+    get:
+      operationId: gsn_engine.controllers.resources.id_get
+      tags:
+        - resources
+      summary: Retrieve Resource by id
+      parameters:
+        - in: path
+          name: resource_id
+          required: true
+          type: string
+      responses:
+        200:
+          description: Return resource
+          schema:
+            type: object
+            properties:
+              resource:
+                $ref: "#/definitions/Resource"
+        404:
+          description: Resource not found
+    put:
+      operationId: gsn_engine.controllers.resources.id_put
+      tags:
+        - resources
+      consumes:
+        - application/json
+      summary: Updates the specified resource
+      parameters:
+        - in: path
+          name: resource_id
+          required: true
+          type: string
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/ResourcePut"
+      responses:
+        204:
+          description: Resource updated
+        404:
+          description: Resource not found
+        422:
+          description: Parameters failed validation
+    delete:
+      operationId: gsn_engine.controllers.resources.id_delete
+      tags:
+        - resources
+      summary: Deletes the specified resource
+      parameters:
+        - in: path
+          name: resource_id
+          required: true
+          type: string
+      responses:
+        204:
+          description: Resource deleted
+        404:
+          description: Resource not found
+        409:
+          description: Resource cannot be deleted while it has active connections associated to it
+  /resources/name/{name}:
+    get:
+      operationId: gsn_engine.controllers.resources.name_get
+      tags:
+        - resources
+      summary: Retrieve Resource by name
+      parameters:
+        - in: path
+          name: name
+          required: true
+          type: string
+      responses:
+        200:
+          description: Return resource
+          schema:
+            type: object
+            properties:
+              resource:
+                $ref: "#/definitions/Resource"
+        404:
+          description: Resource not found
+  /resources/metrics:
+    get:
+      operationId: gsn_engine.controllers.resources.metrics_get
+      tags:
+        - resources
+        - metrics
+      summary: Retrieve Resources metrics
+      responses:
+        200:
+          description: Return resource metrics
+          schema:
+            type: object
+            properties:
+              metrics:
+                $ref: "#/definitions/ResourcesMetrics"
+  /providers:
+    post:
+      operationId: gsn_engine.controllers.providers.post
+      tags:
+        - providers
+      consumes:
+        - application/json
+      summary: Creates a new provider
+      parameters:
+        - in: body
+          name: body
+          description: Provider to be created
+          schema:
+            $ref: "#/definitions/Provider"
+      responses:
+        201:
+          description: Provider created
+          schema:
+            type: object
+            properties:
+              provider_id:
+                $ref: "#/definitions/ProviderId"
+        409:
+          description: Duplicate, provider already exists
+        422:
+          description: Parameters failed validation
+    get:
+      operationId: gsn_engine.controllers.providers.get
+      tags:
+        - providers
+      parameters:
+        - in: query
+          name: service_id
+          description: Id of the service
+          type: string
+          required: true
+        - in: query
+          name: provider_ids
+          description: Id of the provider
+          type: array
+          items:
+            type: string
+        - in: query
+          name: names
+          description: Name of the provider
+          type: array
+          items:
+            type: string
+      responses:
+        200:
+          description: Return provider list
+          schema:
+            type: object
+            properties:
+              provider:
+                type: array
+                items:
+                  $ref: "#/definitions/Provider"
+  /providers/{provider_id}:
+    get:
+      operationId: gsn_engine.controllers.providers.id_get
+      tags:
+        - providers
+      summary: Retrieve Provider by id
+      parameters:
+        - in: path
+          name: provider_id
+          required: true
+          type: string
+      responses:
+        200:
+          description: Return provider
+          schema:
+            type: object
+            properties:
+              provider:
+                $ref: "#/definitions/Provider"
+        404:
+          description: Provider not found
+    put:
+      operationId: gsn_engine.controllers.providers.id_put
+      tags:
+        - providers
+      consumes:
+        - application/json
+      summary: Updates the specified provider
+      parameters:
+        - in: path
+          name: provider_id
+          required: true
+          type: string
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/ProviderPut"
+      responses:
+        204:
+          description: Provider updated
+        404:
+          description: Provider not found
+        422:
+          description: Parameters failed validation
+    delete:
+      operationId: gsn_engine.controllers.providers.id_delete
+      tags:
+        - providers
+      summary: Deletes the specified provider
+      parameters:
+        - in: path
+          name: provider_id
+          required: true
+          type: string
+      responses:
+        204:
+          description: Provider deleted
+        404:
+          description: Provider not found
+  /providers/{provider_id}/scan:
+    put:
+      operationId: gsn_engine.controllers.providers.scan_put
+      tags:
+        - providers
+      summary: Creates a new scan
+      parameters:
+        - in: path
+          name: provider_id
+          required: true
+          type: string
+      responses:
+        204:
+          description: Scan triggered
+        404:
+          description: Provider not found
+  /providers/metrics:
+    get:
+      operationId: gsn_engine.controllers.providers.metrics_get
+      tags:
+        - providers
+        - metrics
+      summary: Retrieve Providers metrics
+      responses:
+        200:
+          description: Return provider metrics
+          schema:
+            type: object
+            properties:
+              metrics:
+                $ref: "#/definitions/ProvidersMetrics"
+  /connections:
+    post:
+      operationId: gsn_engine.controllers.connections.post
+      tags:
+        - connections
+      consumes:
+        - application/json
+      summary: Creates a new connection
+      parameters:
+        - in: body
+          name: body
+          description: Connection to be created
+          schema:
+            $ref: "#/definitions/ConnectionPost"
+      responses:
+        201:
+          description: Connection created
+          schema:
+            type: object
+            properties:
+              connection_id:
+                $ref: "#/definitions/ConnectionId"
+        409:
+          description: Duplicate, connection already exists
+        422:
+          description: Parameters failed validation
+    get:
+      operationId: gsn_engine.controllers.connections.get
+      tags:
+        - connections
+      summary: Gets connections (filtered by id, resource_id, name and/or state)
+      parameters:
+        - in: query
+          name: connection_ids
+          type: array
+          items:
+            type: string
+        - in: query
+          name: resource_ids
+          type: array
+          items:
+            type: string
+        - in: query
+          name: states
+          type: array
+          items:
+            type: string
+        - in: query
+          name: names
+          type: array
+          items:
+            type: string
+        - in: query
+          description: (Deprecated) Use states param instead
+          name: state
+          type: string
+      responses:
+        200:
+          description: Return connection list
+          schema:
+            type: object
+            properties:
+              connection:
+                type: array
+                items:
+                  $ref: "#/definitions/Connection"
+        422:
+          description: Invalid state
+
+  /connections/{connection_id}:
+    get:
+      operationId: gsn_engine.controllers.connections.id_get
+      tags:
+        - connections
+      summary: Retrieve Connection by id
+      parameters:
+        - in: path
+          name: connection_id
+          required: true
+          type: string
+      responses:
+        200:
+          description: Return connection
+          schema:
+            type: object
+            properties:
+              connection:
+                $ref: "#/definitions/Connection"
+        404:
+          description: Connection not found
+    put:
+      operationId: gsn_engine.controllers.connections.id_put
+      tags:
+        - connections
+      consumes:
+        - application/json
+      summary: Updates the specified connection
+      parameters:
+        - in: path
+          name: connection_id
+          required: true
+          type: string
+        - in: body
+          name: body
+          schema:
+            $ref: "#/definitions/ConnectionPut"
+      responses:
+        204:
+          description: Connection updated
+        403:
+          description: Invalid credentials to update connection
+        404:
+          description: Connection not found
+    delete:
+      operationId: gsn_engine.controllers.connections.id_delete
+      tags:
+        - connections
+      summary: Deletes the specified connection
+      parameters:
+        - in: path
+          name: connection_id
+          required: true
+          type: string
+      responses:
+        204:
+          description: Connection deleted
+        403:
+          description: Invalid credentials to delete connection
+        404:
+          description: Connection not found
+
+  /connections/metrics:
+    get:
+      operationId: gsn_engine.controllers.connections.metrics_get
+      tags:
+        - connections
+        - metrics
+      summary: Retrieve Connection metrics
+      responses:
+        200:
+          description: Return connection metrics
+          schema:
+            type: object
+            properties:
+              metrics:
+                $ref: "#/definitions/ConnectionsMetrics"
+  /connections/{connection_id}/recover:
+    put:
+      operationId: gsn_engine.controllers.connections.recover_put
+      tags:
+        - connections
+      summary: Trigger a recover of an errored Connection
+      parameters:
+        - in: path
+          name: connection_id
+          required: true
+          type: string
+      responses:
+        204:
+          description: Connection recover triggered
+        403:
+          description: Invalid credentials to recover connection
+        404:
+          description: Connection not found
+  /connections/{connection_id}/approve:
+    put:
+      operationId: gsn_engine.controllers.connections.approve_put
+      tags:
+        - connections
+      summary: Approve a connection status transition (e.g. establish, delete)
+      parameters:
+        - in: path
+          name: connection_id
+          required: true
+          type: string
+        - in: query
+          name: approval_token
+          required: true
+          type: string
+      responses:
+        204:
+          description: Status update approved
+        403:
+          description: Invalid credentials to approve status update
+        404:
+          description: Connection not found
+
+  /tasks/{task_id}:
+    get:
+      operationId: gsn_engine.controllers.tasks.id_get
+      tags:
+        - tasks
+      summary: Retrieve Task by id
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          type: string
+      responses:
+        200:
+          description: Return task
+          schema:
+            type: object
+            properties:
+              task:
+                $ref: "#/definitions/Task"
+        404:
+          description: Task not found
+
+definitions:
+  User:
+    type: object
+    properties:
+      id:
+        $ref: "#/definitions/UserId"
+      username:
+        type: string
+      role:
+        type: string
+      services:
+        type: array
+        items:
+          $ref: "#/definitions/ServiceId"
+    required:
+      - username
+      - role
+  UserId:
+    type: string
+
+  Service:
+    type: object
+    properties:
+      id:
+        $ref: "#/definitions/ServiceId"
+      name:
+        type: string
+      description:
+        type: string
+      owners:
+        type: array
+        items:
+          $ref: "#/definitions/UserId"
+      providers:
+        type: array
+        items:
+          $ref: "#/definitions/ProviderId"
+      resources:
+        type: array
+        items:
+          $ref: "#/definitions/ResourceId"
+    required:
+      - description
+      - name
+      - owners
+  ServiceId:
+    type: string
+
+  Resource:
+    type: object
+    properties:
+      id:
+        $ref: "#/definitions/ResourceId"
+      service:
+        $ref: "#/definitions/ServiceId"
+      provider:
+        $ref: "#/definitions/ProviderId"
+      name:
+        type: string
+      l4filters:
+        type: array
+        items:
+          type: string
+      subnet:
+        type: string
+    required:
+      - name
+      - service
+      - provider
+      - subnet
+  ResourceId:
+    type: string
+
+  ResourcePut:
+    type: object
+    properties:
+      name:
+        type: string
+
+  Provider:
+    type: object
+    properties:
+      id:
+        $ref: "#/definitions/ProviderId"
+      provider_type:
+        type: string
+      service:
+        $ref: "#/definitions/ServiceId"
+      account:
+        type: string
+      region:
+        type: string
+      name:
+        type: string
+    required:
+      - provider_type
+      - service
+      - account
+      - region
+      - name
+  ProviderId:
+    type: string
+  ProviderPut:
+    type: object
+    properties:
+      name:
+        type: string
+  TokenBasic:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+  Token:
+    type: object
+    allOf:
+      - $ref: "#/definitions/TokenBasic"
+      - properties:
+          id:
+            $ref: "#/definitions/TokenId"
+          user:
+            $ref: "#/definitions/UserId"
+  TokenPost:
+    allOf:
+      - $ref: "#/definitions/TokenBasic"
+      - properties:
+          user:
+            $ref: "#/definitions/UserId"
+  TokenPut:
+    allOf:
+      - $ref: "#/definitions/TokenBasic"
+  TokenId:
+    type: string
+
+  Task:
+    type: object
+    properties:
+      user:
+        $ref: "#/definitions/UserId"
+      status:
+        type: string
+      description:
+        type: string
+      created:
+        type: string
+      updated:
+        type: string
+
+  ConnectionBasic:
+    type: object
+    properties:
+      name:
+        type: string
+      ctype:
+        type: string
+      details:
+        type: object
+      state:
+        type: string
+      approval_token:
+        type: string
+      forward_dns:
+        type: boolean
+  Connection:
+    allOf:
+      - $ref: "#/definitions/ConnectionBasic"
+    type: object
+    properties:
+      id:
+        $ref: "#/definitions/ConnectionId"
+      resource_left:
+        $ref: "#/definitions/ResourceId"
+      resource_right:
+        $ref: "#/definitions/ResourceId"
+  ConnectionPost:
+    allOf:
+      - $ref: "#/definitions/ConnectionBasic"
+    type: object
+    properties:
+      id:
+        $ref: "#/definitions/ConnectionId"
+      resource_left:
+        $ref: "#/definitions/ResourceId"
+      resource_right:
+        $ref: "#/definitions/ResourceId"
+    required:
+      - resource_left
+      - resource_right
+  ConnectionId:
+    type: string
+  ConnectionPut:
+    allOf:
+      - $ref: "#/definitions/ConnectionBasic"
+
+  ConnectionsMetrics:
+    properties:
+      total_connections:
+        type: integer
+      connections_per_state:
+        type: object
+  ResourcesMetrics:
+    properties:
+      total_resources:
+        type: integer
+  ServicesMetrics:
+    properties:
+      total_services:
+        type: integer
+  ProvidersMetrics:
+    properties:
+      total_providers:
+        type: integer
