@@ -25,5 +25,11 @@ func checkMandatoryArgs() {
 }
 
 func main() {
-	apinoiser.LoadSwagger(*swaggerFilePtr)
+	as, err := apinoiser.NewApiServer(hostPtr, portPtr, *swaggerFilePtr)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(2)
+	}
+	fmt.Println("Server to check properties:")
+	fmt.Println(as)
 }
