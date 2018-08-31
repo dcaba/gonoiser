@@ -11,7 +11,7 @@ type apiServer struct {
 	swaggerDoc loads.Document
 }
 
-// TODO: host and port should override swagger server info. Review swagger and servers objects, and what happens
+// TODO: host and port should override swagger server info. Review swagger host and servers objects, and what happens
 // 		 if there's multiple there
 func NewApiServer(host *string, port *int, swaggerFile string) (apiServer, error) {
 	swaggerDoc, err := loadSwagger(swaggerFile)
