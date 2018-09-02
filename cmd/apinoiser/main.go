@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"github.schibsted.io/daniel-caballero/golang-swagger-playground/internal/app/apinoiser"
+	"net/http"
 )
 
 var swaggerFilePtr = flag.String("swagger-file", "", "path to the file describing the swagger")
@@ -38,19 +39,21 @@ func main() {
 	fmt.Println(as)
 
 	// TODO: this list should be filtered thanks to flags, and probably a factory
-	var tests []apinoiser.TestGenerator = [ NewRandomQueryParm() ]
+	tests := []apinoiser.TestGenerator{ apinoiser.NewRandomQueryParm() }
+	client := &http.Client{}
 	for _, test := range tests {
 		testRequests, err := test.Generate(as)
 		if err != nil {
 			fmt.Println(err)
 		}
+		// TODO: this should be run in parallel, with a configurable max
 		for _, testRequest := range testRequests {
 			fmt.Println("Executing:", testRequest)
-			testResult, err := testRequest.Execute()
+			testResponse, err := client.Do(&testRequest)
 			if err != nil {
 				fmt.Println(err)
 			}
-			testResult.Evaluate(*accept2xxsPtr, *accept3xxsPtr)
+			testResult := apinoiser.Evaluate(testResponse, *accept2xxsPtr, *accept3xxsPtr)
 			fmt.Println("Result:", testResult)
 		}
 
