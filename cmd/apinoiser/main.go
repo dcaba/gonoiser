@@ -9,8 +9,9 @@ import (
 )
 
 var swaggerFilePtr = flag.String("swagger-file", "", "path to the file describing the swagger")
-var hostPtr = flag.String("hostname", "localhost", "host you want to run the tests against")
+var hostPtr = flag.String("host", "localhost", "hostname you want to run the tests against")
 var portPtr = flag.Int("port", 8080, "tcp port you want to hit")
+// TODO: ssl support
 var accept2xxsPtr = flag.Bool("accept-2xxs", false, "Consider a 20x response as valid as a response to a wrong request")
 var accept3xxsPtr = flag.Bool("accept-3xxs", false, "Consider a 30x response as valid as a response to a wrong request")
 // TODO: support APIs with authentication?
@@ -45,6 +46,7 @@ func main() {
 		testRequests, err := test.Generate(as)
 		if err != nil {
 			fmt.Println(err)
+			continue
 		}
 		// TODO: this should be run in parallel, with a configurable max
 		for _, testRequest := range testRequests {
@@ -52,6 +54,7 @@ func main() {
 			testResponse, err := client.Do(&testRequest)
 			if err != nil {
 				fmt.Println(err)
+				continue
 			}
 			// TODO: simple output with http request - response would be ok
 			testResult := apinoiser.Evaluate(*testResponse, *accept2xxsPtr, *accept3xxsPtr)

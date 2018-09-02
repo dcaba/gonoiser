@@ -3,11 +3,14 @@ package apinoiser
 import (
 	"github.com/go-openapi/loads"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
 )
 
 type apiServer struct {
-	host string
-	port int
+	host       string
+	port       int
 	swaggerDoc loads.Document
 }
 
@@ -21,13 +24,28 @@ func NewApiServer(host *string, port *int, swaggerFile string) (apiServer, error
 	}
 
 	return apiServer{
-		host: *host,
-		port: *port,
+		host:       *host,
+		port:       *port,
 		swaggerDoc: *swaggerDoc,
 	}, nil
 }
 
-func (as apiServer)String() (out string) {
+func (as apiServer) GetAllPossibleGetRequests() (reqs []http.Request) {
+	for path, _ := range as.swaggerDoc.Spec().Paths.Paths {
+		url, err := url.Parse("http://" + as.host + ":" + strconv.Itoa(as.port)+ path)
+		if err != nil {
+			fmt.Println(err)
+		}
+		request := http.Request{
+			Method: "GET",
+			URL: url,
+		}
+		reqs = append(reqs, request)
+	}
+	return
+}
+
+func (as apiServer) String() (out string) {
 	out += fmt.Sprintln("Host:", as.host)
 	out += fmt.Sprintln("Port:", as.port)
 	for k, _ := range as.swaggerDoc.Spec().Paths.Paths {

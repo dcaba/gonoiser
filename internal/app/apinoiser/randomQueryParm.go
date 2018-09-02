@@ -10,5 +10,5 @@ func NewRandomQueryParm() TestGenerator {
 }
 
 func (rqp RandomQueryParam) Generate(server apiServer) (requests []http.Request, err error) {
-	return requests, err
+	return server.GetAllPossibleGetRequests(), err
 }
