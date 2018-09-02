@@ -53,7 +53,8 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			testResult := apinoiser.Evaluate(testResponse, *accept2xxsPtr, *accept3xxsPtr)
+			// TODO: simple output with http request - response would be ok
+			testResult := apinoiser.Evaluate(*testResponse, *accept2xxsPtr, *accept3xxsPtr)
 			fmt.Println("Result:", testResult)
 		}
 
